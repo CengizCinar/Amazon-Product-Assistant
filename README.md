@@ -1,31 +1,36 @@
 # Amazon Product Assistant
 
-This Chrome extension displays additional product details on Amazon product pages:
+A Chrome extension for Amazon product analysis and profit calculation.
 
-- Product dimensions
-- Weight
-- EAN code
-- Return rate
-- Shipping cost
+## Features
+
+- Product dimensions and weight information
+- EAN code display
+- Manufacturer and origin country information
+- Return rate indicator
+- Shipping cost calculator
+- Box capacity calculator
+- FBA fee display
+- Referral fee percentage
+- Profit calculator with ROI
 
 ## Installation
 
-1. Install the extension to Chrome
-2. Enter your Keepa API key
-3. Visit Amazon product pages
+1. Clone this repository
+2. Open Chrome and go to `chrome://extensions/`
+3. Enable "Developer mode"
+4. Click "Load unpacked" and select the extension directory
 
-## Requirements
+## Usage
 
-- Keepa API key (https://keepa.com)
-- Chrome browser
+1. Get your Keepa API key from [keepa.com](https://keepa.com)
+2. Enter your API key in the extension
+3. Visit any Amazon product page
+4. View product details and calculate potential profits
 
-## Supported Amazon Sites
+## Development
 
-- Amazon.com
-- Amazon.co.uk
-- Amazon.de
-- Amazon.fr
-- Amazon.it
-- Amazon.es
-- Amazon.nl
-- And other Amazon regional sites
+- Built with JavaScript
+- Uses Keepa API for product data
+- Firebase for data storage
+- DeepSeek API for manufacturer country detection
