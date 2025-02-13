@@ -213,20 +213,32 @@ async function _0x2c1b(q) {
 }
 
 // Kimlik yöneticisi
-chrome.storage.local.get(['keepaApiKey', 'userId'], async (r) => {
-  if (r.keepaApiKey) {
-    _0x7a2b = r.keepaApiKey;
-    _0x8c1d = `user_${_0x7a2b.substring(0, 8)}`;
-    chrome.storage.local.set({ userId: _0x8c1d });
+let initializeApiKey = async () => {
+  try {
+    const result = await chrome.storage.local.get(['keepaApiKey', 'userId']);
+    if (result.keepaApiKey) {
+      _0x7a2b = result.keepaApiKey;
+      _0x8c1d = `user_${_0x7a2b.substring(0, 8)}`;
+      await chrome.storage.local.set({ userId: _0x8c1d });
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error initializing API key:', error);
+    return false;
   }
-});
+};
 
-chrome.storage.onChanged.addListener((c, n) => {
-  if (n === 'local' && c.keepaApiKey) {
-    _0x7a2b = c.keepaApiKey.newValue;
+// İlk başlatma
+initializeApiKey();
+
+// Storage değişiklik dinleyicisi
+chrome.storage.onChanged.addListener(async (changes, namespace) => {
+  if (namespace === 'local' && changes.keepaApiKey) {
+    _0x7a2b = changes.keepaApiKey.newValue;
     if (_0x7a2b) {
       _0x8c1d = `user_${_0x7a2b.substring(0, 8)}`;
-      chrome.storage.local.set({ userId: _0x8c1d });
+      await chrome.storage.local.set({ userId: _0x8c1d });
     }
   }
 });
@@ -242,47 +254,46 @@ chrome.runtime.onMessage.addListener((q, s, r) => {
     console.group('Fetch Prices Request');
     console.log('ASIN:', q.asin);
     console.log('API Key Status:', _0x7a2b ? 'Present' : 'Missing');
-    console.log('API Key:', _0x7a2b ? _0x7a2b.substring(0, 5) + '...' : 'None');
     
-    if (!_0x7a2b) {
-      console.warn('No API key found');
-      r({ success: false, error: "Please enter your Keepa API key" });
-      console.groupEnd();
-      return true;
-    }
+    // API key kontrolü ve yeniden deneme mekanizması
+    const processRequest = async () => {
+      if (!_0x7a2b) {
+        // API key yoksa, bir kez daha storage'dan almayı dene
+        const hasKey = await initializeApiKey();
+        if (!hasKey) {
+          console.warn('No API key found after retry');
+          r({ success: false, error: "Please enter your Keepa API key" });
+          return;
+        }
+      }
 
-    _0x2c1b(q.asin)
-      .then(d => {
-        console.group('API Response');
-        console.log('Raw Response:', d);
-        console.groupEnd();
-        
-        if (!d || d === "Not found") {
+      try {
+        const data = await _0x2c1b(q.asin);
+        if (!data || data === "Not found") {
           console.warn('Product not found');
           r({ success: false, error: "Product details not found" });
         } else {
           console.log('Sending successful response');
           r({
             success: true,
-            allEans: d.eanList,
-            dimensions: d.dimensions,
-            manufacturer: d.manufacturer,
-            origin: d.origin,
-            returnRate: d.returnRate,
-            shippingCost: d.shippingCost,
-            boxCapacity: d.boxCapacity,
-            pickAndPackFee: d.pickAndPackFee,
-            referralFeePercentage: d.referralFeePercentage
+            allEans: data.eanList,
+            dimensions: data.dimensions,
+            manufacturer: data.manufacturer,
+            origin: data.origin,
+            returnRate: data.returnRate,
+            shippingCost: data.shippingCost,
+            boxCapacity: data.boxCapacity,
+            pickAndPackFee: data.pickAndPackFee,
+            referralFeePercentage: data.referralFeePercentage
           });
         }
-        console.groupEnd();
-      })
-      .catch(error => {
-        console.group('API Error');
-        console.error('Error:', error);
-        console.groupEnd();
+      } catch (error) {
+        console.error('Error processing request:', error);
         r({ success: false, error: "An error occurred" });
-      });
+      }
+    };
+
+    processRequest();
     return true;
   }
 });
